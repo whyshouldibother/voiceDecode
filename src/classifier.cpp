@@ -2,14 +2,15 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
-#include <iomanip>
-#include <limits>
 #include <random>
 #include <stdexcept>
-Classifier::Classifier(const int &inputSize, const int &outputSize) {
-  layers = {inputSize, 128, 64, outputSize};
-  std::mt19937 rng(std::random_device{}());
+#include <string>
+#include <sys/types.h>
 
+void Classifier::init() {
+    weights.clear();
+    biases.clear();
+  std::mt19937 rng(std::random_device{}());
   for (size_t l = 1; l < layers.size(); l++) {
     int inputs = layers[l - 1];
     int outputs = layers[l];
@@ -27,6 +28,10 @@ Classifier::Classifier(const int &inputSize, const int &outputSize) {
     }
   }
 }
+Classifier::Classifier(const int &inputSize, const int &outputSize) {
+  layers = {inputSize, 128, 64, outputSize};
+    init();
+}
 
 std::vector<double> Classifier::predict(const std::vector<double> &inputs) {
   std::vector<double> activations = inputs;
@@ -34,11 +39,12 @@ std::vector<double> Classifier::predict(const std::vector<double> &inputs) {
     std::vector<double> next(layers[l + 1], 0.0);
     for (size_t i = 0; i < next.size(); i++) {
       next[i] = biases[l][i];
-
+      double sum = next[i];
+      std::vector<double> layerWeight = weights[l][i];
       for (size_t j = 0; j < activations.size(); j++) {
-        next[i] += weights[l][i][j] * activations[j];
+        sum += layerWeight[j] * activations[j];
       }
-
+      next[i] = sum;
       if (l < weights.size() - 1) {
         next[i] = std::max(0.0, next[i]);
       }
@@ -49,7 +55,7 @@ std::vector<double> Classifier::predict(const std::vector<double> &inputs) {
 }
 
 double Classifier::calculateLoss(const std::vector<double> &outputs,
-                                 std::size_t label) const {
+                                 const std::size_t label) const {
   if (outputs.empty() || label >= outputs.size()) {
     throw std::invalid_argument("Invalid outputs or label");
   }
@@ -88,7 +94,7 @@ Classifier::forward(const std::vector<double> &inputs) {
 }
 
 void Classifier::trainSample(const std::vector<double> &inputs,
-                             std::size_t label, double learningRate) {
+                             const std::size_t label,const double learningRate) {
   std::vector<std::vector<double>> activations = forward(inputs);
   const std::vector<double> logits = activations.back();
   if (label >= logits.size()) {
@@ -137,82 +143,73 @@ void Classifier::trainSample(const std::vector<double> &inputs,
 }
 
 bool Classifier::save(const std::string &filename) const {
-  std::ofstream file(filename);
+  std::ofstream file(filename, std::ios::binary);
 
-  if (!file) {
+  if (!file)
     return false;
+
+  // Save Metadataclang++ main.cpp decode.cpp preprocessor.cpp classifier.cpp dataset.cpp \
+    -lmpg123 -O3 -march=native  \
+    -o train
+  // Epoch
+  file.write(reinterpret_cast<const char *>(&epoch), sizeof(epoch));
+
+  // Layer Info
+  uint32_t layerCount = layers.size();
+  file.write(reinterpret_cast<const char *>(&layerCount), sizeof(layerCount));
+  for (const int &layer : layers) {
+    file.write(reinterpret_cast<const char *>(&layer), sizeof(layer));
   }
 
-  file << std::setprecision(std::numeric_limits<double>::max_digits10);
-  file << layers.size() << std::endl;
-
-  for (int size : layers) {
-    file << size << '\n';
-  }
-
-  file << '\n';
-
-  for (std::size_t l = 0; l < weights.size(); l++) {
-    for (const std::vector<double> neuron : weights[l]) {
-      for (double weight : neuron) {
-        file << weight << ' ';
-      }
-      file << '\n';
+  // Weights
+  for (const std::vector<std::vector<double>> &layer : weights) {
+    for (const std::vector<double> &neuron : layer) {
+      file.write(reinterpret_cast<const char *>(neuron.data()),
+                 neuron.size() * sizeof(double));
     }
-
-    for (double bias : biases[l]) {
-      file << bias << ' ';
-    }
-    file << '\n';
   }
-  return static_cast<bool>(file);
+
+  // Bias
+  for (const std::vector<double> &layer : biases) {
+    file.write(reinterpret_cast<const char *>(layer.data()),
+               layer.size() * sizeof(double));
+  }
+
+  return file.good();
 }
 
 bool Classifier::load(const std::string &filename) {
-  std::ifstream file(filename);
+  std::ifstream file(filename, std::ios::binary);
   if (!file) {
     return false;
   }
-  std::size_t count;
-
-  if (!(file >> count) || count < 2 || count > 100) {
+  file.read(reinterpret_cast<char *>(&epoch), sizeof(epoch));
+  uint32_t layerCount;
+  file.read(reinterpret_cast<char *>(&layerCount), sizeof(layerCount));
+  if (!file || layerCount < 2)
     return false;
-  }
-  std::vector<int> newLayers(count);
-
-  for (int &size : newLayers) {
-    if (!(file >> size) || size <= 0) {
+  layers.resize(layerCount);
+  for (int &layer : layers) {
+    file.read(reinterpret_cast<char *>((&layer)), sizeof(layer));
+    if (!file || layer <= 0)
       return false;
-    }
   }
-  std::vector<std::vector<std::vector<double>>> newWeights;
-  std::vector<std::vector<double>> newBiases;
-  for (std::size_t l = 1; l < newLayers.size(); l++) {
-    std::size_t inputCount = newLayers[l - 1];
-    std::size_t outputCount = newLayers[l];
+  init();
 
-    newWeights.emplace_back(outputCount, std::vector<double>(inputCount));
-
-    newBiases.emplace_back(outputCount);
-
-    for (auto &neuron : newWeights.back()) {
-      for (double &weight : neuron) {
-        if (!(file >> weight)) {
-          return false;
-        }
-      }
-    }
-
-    for (double &bias : newBiases.back()) {
-      if (!(file >> bias)) {
+  //Load Weights
+  for (std::vector<std::vector<double>> &layer : weights) {
+    for (std::vector<double> &neuron : layer) {
+      file.read(reinterpret_cast<char *>(neuron.data()),
+                neuron.size() * sizeof(double));
+      if (!file)
         return false;
-      }
     }
   }
 
-  layers = std::move(newLayers);
-  weights = std::move(newWeights);
-  biases = std::move(newBiases);
-
-  return true;
+  //Load Biases
+  for(std::vector<double>& layer: biases){
+      file.read(reinterpret_cast<char*>(layer.data()), layer.size()*sizeof(double));
+      if(!file) return false;
+  }
+  return file.peek() == std::char_traits<char>::eof();
 }

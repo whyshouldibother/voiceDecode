@@ -36,9 +36,9 @@ std::pair<std::vector<double>, long> decode(const char* file){
         exit(1);
     }
     
-    std::cout << "Sample rate: " <<sample_rate<<" Hz"<<std::endl;
-    std::cout<<"Channels: "<<channels<<std::endl;
-    std::cout<<"Encoding: "<<encoding<<std::endl;
+    //std::cout << "Sample rate: " <<sample_rate<<" Hz"<<std::endl;
+    //std::cout<<"Channels: "<<channels<<std::endl;
+    //std::cout<<"Encoding: "<<encoding<<std::endl;
 
     unsigned char buffer[8192];
     size_t bytes_read = 0, total_bytes = 0;
@@ -61,7 +61,7 @@ std::pair<std::vector<double>, long> decode(const char* file){
         break;
         }
     }
-    std::cout<<"Decoded bytes: "<<total_bytes<<std::endl;
+    //std::cout<<"Decoded bytes: "<<total_bytes<<std::endl;
     mpg123_close(decoder);
     mpg123_delete(decoder);
     mpg123_exit();
@@ -90,9 +90,6 @@ int main(int argc, char* argv[]){
     }
     auto [audio, sample_rate]= decode(argv[1]);
     std::vector<double> inputNodes = generateInputNodes(audio, sample_rate);
-    for(double &input: inputNodes){
-        std::cout<<input<<std::endl;
-    }
     return 0;
 }
 #endif

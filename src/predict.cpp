@@ -13,11 +13,10 @@ int main(int argc, char* argv[]){
         std::cerr<<"Usage :"<<argv[0]<<"<audio_path>\n";
         return 1;
     }
-
     Classifier classifier(400,2);
 
-    if(!classifier.load("model.dat")){
-        std::cerr<<"Failed to load model.dat\n";
+    if(!classifier.load("model.bin")){
+        std::cerr<<"Failed to load model.bin\n";
         return 1;
     }
 

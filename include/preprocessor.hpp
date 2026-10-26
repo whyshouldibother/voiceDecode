@@ -1,5 +1,5 @@
 #ifndef PREPROCESSOR_HPP
 #define PREPROCESSOR_HPP
 #include <vector>
-std::vector<double> generateInputNodes(const std::vector<double> &, const long &);
+std::vector<float> generateInputNodes(const std::vector<float> &, const long &);
 #endif

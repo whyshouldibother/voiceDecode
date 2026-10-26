@@ -4,7 +4,7 @@
 #include "decode.hpp"
 #include <utility>
 #include "preprocessor.hpp"
-std::pair<std::vector<double>, long> decode(const char* file){
+std::pair<std::vector<float>, long> decode(const char* file){
     std::vector<unsigned char> audio_data;
     //initialize the mpg123 lib
     if(mpg123_init() !=MPG123_OK){
@@ -73,7 +73,7 @@ std::pair<std::vector<double>, long> decode(const char* file){
         samples.push_back(sample);
     }
 
-    std::vector<double> time, audio;
+    std::vector<float> time, audio;
 
     for(size_t i=0; i+1<samples.size(); i+=2){
         time.push_back((i/2.0)/sample_rate);
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]){
         return 1;
     }
     auto [audio, sample_rate]= decode(argv[1]);
-    std::vector<double> inputNodes = generateInputNodes(audio, sample_rate);
+    std::vector<float> inputNodes = generateInputNodes(audio, sample_rate);
     return 0;
 }
 #endif

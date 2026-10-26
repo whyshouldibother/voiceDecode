@@ -3,8 +3,8 @@
 #include <cmath>
 #include <fstream>
 #include <random>
-#include <stdexcept>
 #include <string>
+#include <stdexcept>
 #include <sys/types.h>
 
 void Classifier::init() {
@@ -15,14 +15,14 @@ void Classifier::init() {
     int inputs = layers[l - 1];
     int outputs = layers[l];
 
-    weights.emplace_back(outputs, std::vector<double>(inputs));
-    biases.emplace_back(outputs, 0.0);
+    weights.emplace_back(outputs, std::vector<float>(inputs));
+    biases.emplace_back(outputs, 0.0f);
 
-    double scale = std::sqrt(2.0 / inputs);
-    std::normal_distribution<double> dist(0.0, scale);
+    float scale = std::sqrt(2.0 / inputs);
+    std::normal_distribution<float> dist(0.0f, scale);
 
-    for (std::vector<double> &neuron : weights.back()) {
-      for (double &weight : neuron) {
+    for (std::vector<float> &neuron : weights.back()) {
+      for (float &weight : neuron) {
         weight = dist(rng);
       }
     }
@@ -33,20 +33,20 @@ Classifier::Classifier(const int &inputSize, const int &outputSize) {
     init();
 }
 
-std::vector<double> Classifier::predict(const std::vector<double> &inputs) {
-  std::vector<double> activations = inputs;
+std::vector<float> Classifier::predict(const std::vector<float> &inputs) {
+  std::vector<float> activations = inputs;
   for (size_t l = 0; l < weights.size(); l++) {
-    std::vector<double> next(layers[l + 1], 0.0);
+    std::vector<float> next(layers[l + 1], 0.0f);
     for (size_t i = 0; i < next.size(); i++) {
       next[i] = biases[l][i];
-      double sum = next[i];
-      std::vector<double> layerWeight = weights[l][i];
+      float sum = next[i];
+      std::vector<float> layerWeight = weights[l][i];
       for (size_t j = 0; j < activations.size(); j++) {
         sum += layerWeight[j] * activations[j];
       }
       next[i] = sum;
       if (l < weights.size() - 1) {
-        next[i] = std::max(0.0, next[i]);
+        next[i] = std::max(0.0f, next[i]);
       }
     }
     activations = std::move(next);
@@ -54,29 +54,29 @@ std::vector<double> Classifier::predict(const std::vector<double> &inputs) {
   return activations;
 }
 
-double Classifier::calculateLoss(const std::vector<double> &outputs,
+float Classifier::calculateLoss(const std::vector<float> &outputs,
                                  const std::size_t label) const {
   if (outputs.empty() || label >= outputs.size()) {
     throw std::invalid_argument("Invalid outputs or label");
   }
-  double maxValue = *std::max_element(outputs.begin(), outputs.end()),
-         sum = 0.0;
-  for (double output : outputs) {
+  float maxValue = *std::max_element(outputs.begin(), outputs.end()),
+         sum = 0.0f;
+  for (float output : outputs) {
     sum += std::exp(output - maxValue);
   }
   return maxValue + std::log(sum) - outputs[label];
 }
 
-std::vector<std::vector<double>>
-Classifier::forward(const std::vector<double> &inputs) {
+std::vector<std::vector<float>>
+Classifier::forward(const std::vector<float> &inputs) {
   if (inputs.size() != (size_t)layers[0]) {
     throw std::invalid_argument("Incorrect input size");
   }
-  std::vector<std::vector<double>> activations;
+  std::vector<std::vector<float>> activations;
   activations.push_back(inputs);
   for (std::size_t l = 0; l < weights.size(); l++) {
-    const std::vector<double> &previous = activations.back();
-    std::vector<double> next(layers[l + 1], 0.0);
+    const std::vector<float> &previous = activations.back();
+    std::vector<float> next(layers[l + 1], 0.0f);
     for (size_t i = 0; i < next.size(); i++) {
       next[i] = biases[l][i];
 
@@ -85,7 +85,7 @@ Classifier::forward(const std::vector<double> &inputs) {
       }
 
       if (l < weights.size() - 1) {
-        next[i] = std::max(0.0, next[i]);
+        next[i] = std::max(0.0f, next[i]);
       }
     }
     activations.push_back(std::move(next));
@@ -93,38 +93,38 @@ Classifier::forward(const std::vector<double> &inputs) {
   return activations;
 }
 
-void Classifier::trainSample(const std::vector<double> &inputs,
-                             const std::size_t label,const double learningRate) {
-  std::vector<std::vector<double>> activations = forward(inputs);
-  const std::vector<double> logits = activations.back();
+void Classifier::trainSample(const std::vector<float> &inputs,
+                             const std::size_t label,const float learningRate) {
+  std::vector<std::vector<float>> activations = forward(inputs);
+  const std::vector<float> logits = activations.back();
   if (label >= logits.size()) {
     throw std::invalid_argument("Invalid label");
   }
-  double maxLogit = *std::max_element(logits.begin(), logits.end());
-  std::vector<double> probabilities(logits.size());
-  double sum = 0.0;
+  float maxLogit = *std::max_element(logits.begin(), logits.end());
+  std::vector<float> probabilities(logits.size());
+  float sum = 0.0f;
   for (std::size_t i = 0; i < logits.size(); i++) {
     probabilities[i] = std::exp(logits[i] - maxLogit);
     sum += probabilities[i];
   }
-  for (double &p : probabilities) {
+  for (float &p : probabilities) {
     p /= sum;
   }
   const std::size_t layerCount = weights.size();
   // Gradient
-  std::vector<std::vector<double>> deltas(layerCount);
+  std::vector<std::vector<float>> deltas(layerCount);
   deltas.back() = probabilities;
   deltas.back()[label] -= 1.0;
 
   for (std::size_t l = layerCount - 1; l > 0; l--) {
-    std::vector<double> previousDelta(layers[l], 0.0);
+    std::vector<float> previousDelta(layers[l], 0.0f);
     for (std::size_t j = 0; j < previousDelta.size(); j++) {
       for (std::size_t i = 0; i < deltas[l].size(); i++) {
         previousDelta[j] += weights[l][i][j] * deltas[l][i];
       }
 
-      if (activations[l][j] <= 0.0) {
-        previousDelta[j] = 0.0;
+      if (activations[l][j] <= 0.0f) {
+        previousDelta[j] = 0.0f;
       }
     }
     deltas[l - 1] = std::move(previousDelta);
@@ -134,7 +134,7 @@ void Classifier::trainSample(const std::vector<double> &inputs,
   for (std::size_t l = 0; l < layerCount; l++) {
     for (std::size_t i = 0; i < weights[l].size(); i++) {
       for (std::size_t j = 0; j < weights[l][i].size(); j++) {
-        double weightGradient = deltas[l][i] * activations[l][j];
+        float weightGradient = deltas[l][i] * activations[l][j];
         weights[l][i][j] -= learningRate * weightGradient;
       }
       biases[l][i] -= learningRate * deltas[l][i];
@@ -162,17 +162,17 @@ bool Classifier::save(const std::string &filename) const {
   }
 
   // Weights
-  for (const std::vector<std::vector<double>> &layer : weights) {
-    for (const std::vector<double> &neuron : layer) {
+  for (const std::vector<std::vector<float>> &layer : weights) {
+    for (const std::vector<float> &neuron : layer) {
       file.write(reinterpret_cast<const char *>(neuron.data()),
-                 neuron.size() * sizeof(double));
+                 neuron.size() * sizeof(float));
     }
   }
 
   // Bias
-  for (const std::vector<double> &layer : biases) {
+  for (const std::vector<float> &layer : biases) {
     file.write(reinterpret_cast<const char *>(layer.data()),
-               layer.size() * sizeof(double));
+               layer.size() * sizeof(float));
   }
 
   return file.good();
@@ -197,18 +197,18 @@ bool Classifier::load(const std::string &filename) {
   init();
 
   //Load Weights
-  for (std::vector<std::vector<double>> &layer : weights) {
-    for (std::vector<double> &neuron : layer) {
+  for (std::vector<std::vector<float>> &layer : weights) {
+    for (std::vector<float> &neuron : layer) {
       file.read(reinterpret_cast<char *>(neuron.data()),
-                neuron.size() * sizeof(double));
+                neuron.size() * sizeof(float));
       if (!file)
         return false;
     }
   }
 
   //Load Biases
-  for(std::vector<double>& layer: biases){
-      file.read(reinterpret_cast<char*>(layer.data()), layer.size()*sizeof(double));
+  for(std::vector<float>& layer: biases){
+      file.read(reinterpret_cast<char*>(layer.data()), layer.size()*sizeof(float));
       if(!file) return false;
   }
   return file.peek() == std::char_traits<char>::eof();

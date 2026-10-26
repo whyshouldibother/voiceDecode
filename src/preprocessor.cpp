@@ -1,12 +1,12 @@
 #include "preprocessor.hpp"
 #include <vector>
 #include <algorithm>
-std::vector<double> generateInputNodes(const std::vector<double> &audio, const long &sample_rate){
+std::vector<float> generateInputNodes(const std::vector<float> &audio, const long &sample_rate){
 
 //grouping into input vector
     size_t groupSize = sample_rate/100, count;
-    std::vector<double> input;
-    double sum = 0;
+    std::vector<float> input;
+    float sum = 0;
     for(size_t i=0; i<audio.size(); i+=groupSize){
         sum =0 ;
         count = std::min(groupSize, audio.size() - i);
@@ -20,7 +20,7 @@ std::vector<double> generateInputNodes(const std::vector<double> &audio, const l
         input.resize(400, 0.0);
     }else if(input.size()>400){
         size_t start = (input.size()-400)/2;
-        input = std::vector<double>(input.begin() + start, input.begin() + start + 400);
+        input = std::vector<float>(input.begin() + start, input.begin() + start + 400);
     }
     return input;
 }

@@ -2,6 +2,6 @@
 #define DECODE_HPP
 #include<vector>
 #include<utility>
-std::pair<std::vector<double>,long> decode(const char*);
+std::pair<std::vector<float>,long> decode(const char*);
 
 #endif

@@ -31,7 +31,7 @@ int main(const int argc, const char *argv[]) {
   Classifier classifier(inputSize, outputSize);
   std::mt19937 rng(std::random_device{}());
   fs::path modelFile = fs::path(DATA_DIR)/"models"/MODEL".bin";
-  const double learningRate = 0.001;
+  const float learningRate = 0.001;
   size_t silent = 0;
   if (argc > 1 && std::isdigit(static_cast<unsigned char>(argv[1][0]))) {
     silent = argv[1][0] - '0';
@@ -70,11 +70,11 @@ int main(const int argc, const char *argv[]) {
       classifier.trainSample(sample.inputs, sample.label, learningRate);
     }
 
-    double totalLoss = 0.0;
+    float totalLoss = 0.0;
     std::size_t correct = 0;
 
     for (const auto &sample : dataset) {
-      std::vector<double> logits = classifier.predict(sample.inputs);
+      std::vector<float> logits = classifier.predict(sample.inputs);
       totalLoss += classifier.calculateLoss(logits, sample.label);
 
       auto prediction = std::distance(
@@ -84,8 +84,8 @@ int main(const int argc, const char *argv[]) {
       }
     }
 
-    double averageLoss = totalLoss / dataset.size();
-    double accuracy = 100.0 * correct / dataset.size();
+    float averageLoss = totalLoss / dataset.size();
+    float accuracy = 100.0 * correct / dataset.size();
 
     if (epoch % checkGap == 0 && silent < 2) {
       std::cout << "Epoch" << epoch + 1 << "/" << " | Loss: " << averageLoss

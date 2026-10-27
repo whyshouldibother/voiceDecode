@@ -5,10 +5,10 @@ project(VoiceDecode LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_options(-O3 -march=native -flto)
+add_compile_options(-O3 -march=native -flto -ffast-math -fopenmp)
 
 find_library(MPG123_LIBRARY mpg123 REQUIRED)
-
+find_package(OpenMP REQUIRED)
 add_library(classifier_lib STATIC
     src/classifier.cpp
     src/dataset.cpp
@@ -17,6 +17,7 @@ add_library(classifier_lib STATIC
 )
 
 target_link_libraries(classifier_lib PUBLIC ${MPG123_LIBRARY})
+target_link_libraries(classifier_lib PUBLIC OpenMP::OpenMP_CXX) 
 target_include_directories(classifier_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_executable(trainCommands src/main.cpp)
 target_compile_definitions(trainCommands PRIVATE MODEL="commands" DATA_DIR="${DATA_DIR}")

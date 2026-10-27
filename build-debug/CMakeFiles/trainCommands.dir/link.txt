@@ -1,0 +1,1 @@
+/usr/bin/c++ -O2 -g -fno-omit-frame-pointer -ffast-math -Wl,--dependency-file=CMakeFiles/trainCommands.dir/link.d CMakeFiles/trainCommands.dir/src/main.cpp.o -o trainCommands  libclassifier_lib.a /usr/lib/libmpg123.so

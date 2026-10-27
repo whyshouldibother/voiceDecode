@@ -4,7 +4,8 @@
 #include <filesystem>
 #include <iostream>
 #include <random>
-#include <string>
+#include <cstring>
+#include <vector>
 #ifndef MODEL
 #define MODEL "commands"
 #endif
@@ -13,7 +14,7 @@
 #endif
 namespace fs = std::filesystem;
 int main(const int argc, const char *argv[]) {
-    const fs::path datasetPath = fs::path(DATA_DIR)/"data"/MODEL/"samples";
+  const fs::path datasetPath = fs::path(DATA_DIR) / "data" / MODEL / "samples";
   auto dataset = loadDataset(datasetPath.c_str());
   if (dataset.empty()) {
     std::cerr << "Dataset is empty" << std::endl;
@@ -26,18 +27,19 @@ int main(const int argc, const char *argv[]) {
       std::cerr << "Inconsistent inputs" << std::endl;
       return 1;
     }
-    outputSize = std::max(outputSize, sample.label + 1);
+    outputSize = (std::size_t)std::max(outputSize, sample.label + 1);
   }
-  Classifier classifier(inputSize, outputSize);
+  const std::vector<std::size_t> layers = (std::strcmp(MODEL,"command")==0)?(std::vector<std::size_t>({inputSize, 128, 64, outputSize})):(std::vector<std::size_t>({inputSize, 32,outputSize}));
+  Classifier classifier(layers);
   std::mt19937 rng(std::random_device{}());
-  fs::path modelFile = fs::path(DATA_DIR)/"models"/MODEL".bin";
+  fs::path modelFile = fs::path(DATA_DIR) / "models" / MODEL ".bin";
   const float learningRate = 0.001;
   size_t silent = 0;
   if (argc > 1 && std::isdigit(static_cast<unsigned char>(argv[1][0]))) {
     silent = argv[1][0] - '0';
   }
-  if(argc > 2){
-      modelFile = argv[2];
+  if (argc > 2) {
+    modelFile = argv[2];
   }
 
   if (fs::exists(modelFile)) {
@@ -61,7 +63,7 @@ int main(const int argc, const char *argv[]) {
   }
 
   const int checkGap = epochs / 5;
-  int epoch =0;
+  int epoch = 0;
   for (; epoch < epochs; epoch++) {
 
     std::shuffle(dataset.begin(), dataset.end(), rng);
@@ -73,30 +75,32 @@ int main(const int argc, const char *argv[]) {
     float totalLoss = 0.0;
     std::size_t correct = 0;
 
-    for (const auto &sample : dataset) {
-      std::vector<float> logits = classifier.predict(sample.inputs);
-      totalLoss += classifier.calculateLoss(logits, sample.label);
+    if (epoch % checkGap == 0) {
 
-      auto prediction = std::distance(
-          logits.begin(), std::max_element(logits.begin(), logits.end()));
-      if (static_cast<std::size_t>(prediction) == sample.label) {
-        correct++;
+      for (const auto &sample : dataset) {
+        std::vector<float> logits = classifier.predict(sample.inputs);
+        totalLoss += classifier.calculateLoss(logits, sample.label);
+
+        auto prediction = std::distance(
+            logits.begin(), std::max_element(logits.begin(), logits.end()));
+        if (static_cast<std::size_t>(prediction) == sample.label) {
+          correct++;
+        }
       }
-    }
+      float averageLoss = totalLoss / dataset.size();
+      float accuracy = 100.0 * correct / dataset.size();
 
-    float averageLoss = totalLoss / dataset.size();
-    float accuracy = 100.0 * correct / dataset.size();
-
-    if (epoch % checkGap == 0 && silent < 2) {
-      std::cout << "Epoch" << epoch + 1 << "/" << " | Loss: " << averageLoss
-                << " | Accuracy: " << accuracy << "%\n";
-    }
-    if (epoch % checkGap == 0 && averageLoss <= 1e-5 && silent == 0) {
-      std::cout << "Stop(y/N)";
-      std::string stop = "false";
-      std::cin >> stop;
-      if (stop[0] == 'y' || stop[0] == 'Y')
-        break;
+      if (silent < 2) {
+        std::cout << "Epoch" << epoch + 1 << "/" << " | Loss: " << averageLoss
+                  << " | Accuracy: " << accuracy << "%\n";
+      }
+      if (averageLoss <= 1e-5 && silent == 0) {
+        std::cout << "Stop(y/N)";
+        std::string stop = "false";
+        std::cin >> stop;
+        if (stop[0] == 'y' || stop[0] == 'Y')
+          break;
+      }
     }
   }
   classifier.epoch += epoch;

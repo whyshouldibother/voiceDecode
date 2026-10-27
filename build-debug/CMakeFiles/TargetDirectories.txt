@@ -1,6 +1,0 @@
-/home/cat/Desktop/code/voiceCloning/voiceDecode/build-debug/CMakeFiles/classifier_lib.dir
-/home/cat/Desktop/code/voiceCloning/voiceDecode/build-debug/CMakeFiles/trainCommands.dir
-/home/cat/Desktop/code/voiceCloning/voiceDecode/build-debug/CMakeFiles/trainWakeup.dir
-/home/cat/Desktop/code/voiceCloning/voiceDecode/build-debug/CMakeFiles/predict.dir
-/home/cat/Desktop/code/voiceCloning/voiceDecode/build-debug/CMakeFiles/edit_cache.dir
-/home/cat/Desktop/code/voiceCloning/voiceDecode/build-debug/CMakeFiles/rebuild_cache.dir

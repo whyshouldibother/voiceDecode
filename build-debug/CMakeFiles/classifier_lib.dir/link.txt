@@ -1,2 +1,0 @@
-/usr/bin/ar qc libclassifier_lib.a CMakeFiles/classifier_lib.dir/src/classifier.cpp.o CMakeFiles/classifier_lib.dir/src/dataset.cpp.o CMakeFiles/classifier_lib.dir/src/decode.cpp.o CMakeFiles/classifier_lib.dir/src/preprocessor.cpp.o
-/usr/bin/ranlib libclassifier_lib.a
